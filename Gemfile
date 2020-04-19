@@ -43,3 +43,5 @@ gem 'graphql', '1.9.17'
 gem 'bcrypt', '~> 3.1.13'
 gem 'graphiql-rails', group: :development
 gem 'graphiql-rails', group: :development
+gem 'search_object_graphql', '0.3.1'
+
