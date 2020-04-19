@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Mutations
   class SignInUser < BaseMutation
     null true
@@ -14,25 +16,15 @@ module Mutations
       return unless user
       return unless user.authenticate(credentials[:password])
 
+      # 変換器を作成
       crypt = ActiveSupport::MessageEncryptor.new(
-          Rails.application.credentials.secret_key_base.byteslice(0..31)
+        Rails.application.credentials.secret_key_base.byteslice(0..31)
       )
+      # 変換器でuser_idを元にtokenを生成
       token = crypt.encrypt_and_sign("user-id:#{user.id}")
 
+      context[:session][:token] = token
       { user: user, token: token }
     end
   end
 end
-mutation {
-  signinUser(
-      credentials: {
-          email: "rado@example.com",
-          password: "123456"
-      }
-  ) {
-    token
-    user {
-      id
-    }
-  }
-}

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class GraphqlController < ApplicationController
   # If accessing from outside this domain, nullify the session
   # This allows for outside API access while preventing CSRF attacks,
@@ -9,17 +11,33 @@ class GraphqlController < ApplicationController
     query = params[:query]
     operation_name = params[:operationName]
     context = {
-      # Query context goes here, for example:
-      # current_user: current_user,
+      session: session,
+      current_user: current_user
     }
     result = PracticeGraphqlRubySchema.execute(query, variables: variables, context: context, operation_name: operation_name)
     render json: result
-  rescue => e
+  rescue StandardError => e
     raise e unless Rails.env.development?
+
     handle_error_in_development e
   end
 
   private
+
+  def current_user
+    return unless session[:token]
+
+    # 変換器を作成
+    crypt = ActiveSupport::MessageEncryptor.new(Rails.application.credentials.secret_key_base.byteslice(0..31))
+    # 変換器でsessionから受け取ったtokenを変換
+    token = crypt.decrypt_and_verify session[:token]
+    # 変換結果からuser_idを抽出
+    user_id = token.gsub('user-id:', '').to_i
+
+    User.find user_id
+  rescue ActiveSupport::MessageVerifier::InvalidSignature
+    nil
+  end
 
   # Handle form data, JSON body, or a blank value
   def ensure_hash(ambiguous_param)
